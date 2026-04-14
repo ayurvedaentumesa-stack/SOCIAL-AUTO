@@ -78,26 +78,40 @@
     </div>
 
     <script>
-        // Handle File Upload
+        // Handle File Upload (Real implementation)
         document.getElementById('file-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
             const status = document.getElementById('upload-status');
             status.classList.remove('hidden');
-            status.innerText = `Subiendo ${file.name}...`;
-            status.className = "mt-4 text-indigo-400 font-medium";
+            status.innerText = `Subiendo y procesando ${file.name}...`;
+            status.className = "mt-4 text-indigo-400 font-medium animate-pulse";
 
-            // In a real app, you would use FormData and fetch to a backend endpoint
-            // Example:
-            // const formData = new FormData();
-            // formData.append('ebook', file);
-            // await fetch('/api/upload', { method: 'POST', body: formData });
+            try {
+                const formData = new FormData();
+                formData.append('ebook', file);
 
-            setTimeout(() => {
-                status.innerText = `✅ "${file.name}" subido con éxito y listo para procesar.`;
-                status.className = "mt-4 text-emerald-400 font-medium";
-            }, 1500);
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.innerText = `✅ "${file.name}" procesado con éxito. Se extrajeron ${data.extractedLength} caracteres.`;
+                    status.className = "mt-4 text-emerald-400 font-medium";
+                    status.classList.remove('animate-pulse');
+                } else {
+                    throw new Error(data.error || "Error al subir el archivo");
+                }
+            } catch (err) {
+                console.error("Upload Error:", err);
+                status.innerText = `❌ Error: ${err.message}`;
+                status.className = "mt-4 text-red-400 font-medium";
+                status.classList.remove('animate-pulse');
+            }
         });
 
         async function runAutomation() {
@@ -105,6 +119,8 @@
             const originalText = btn.innerText;
             btn.innerText = "Procesando...";
             btn.disabled = true;
+
+            const logContainer = document.getElementById('log-container');
 
             try {
                 console.log("Triggering automation API...");
@@ -118,12 +134,30 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert("¡Éxito! Post generado y programado: " + (data.data.instagram || 'OK'));
+                    // Update UI with results
+                    const newLog = document.createElement('div');
+                    newLog.className = "border-l-4 border-indigo-500 bg-slate-800/50 p-4 rounded-r-lg animate-in slide-in-from-left duration-500";
+                    newLog.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs text-indigo-400 font-bold uppercase">Publicado - Contenido Vertical Generado</span>
+                                <p class="mt-1 text-slate-200">"${data.data.script_vertical ? data.data.script_vertical.substring(0, 100) + '...' : 'Contenido generado'}"</p>
+                                <div class="mt-2 flex gap-2">
+                                    ${data.videoUrl ? `<span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">Video Vertical ✅</span>` : ''}
+                                    ${data.imageUrl ? `<span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded">Imagen ✅</span>` : ''}
+                                </div>
+                            </div>
+                            <span class="text-xs text-slate-500">Recién ahora</span>
+                        </div>
+                    `;
+                    logContainer.prepend(newLog);
+                    
+                    alert("¡Éxito! Post generado y programado. Se ha priorizado contenido vertical.");
                 } else {
-                    throw new Error(data.error || "Error desconocido");
+                    throw new Error(data.error || "Error desconocido en el servidor");
                 }
             } catch (err) {
-                alert("Error al ejecutar: " + err.message);
+                alert("Error al ejecutar: " + err.message + "\n\nTip: Verifica que las variables de entorno estén configuradas en Vercel.");
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;

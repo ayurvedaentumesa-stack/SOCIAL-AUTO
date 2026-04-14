@@ -10,16 +10,19 @@ async function generateContent(data) {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const prompt = `
-        Eres un experto en marketing digital. Basándote en esta información:
+        Eres un experto en marketing digital viral especializado en contenido vertical (Reels, TikTok, Shorts). 
+        Basándote en esta información extraída de un ebook:
         "${JSON.stringify(data)}"
         
-        Crea contenido atractivo para redes sociales:
-        1. Un post para Instagram (incluye hashtags relevantes).
-        2. Un tweet conciso (máximo 280 caracteres).
-        3. Un post profesional para LinkedIn.
-        4. Un guion breve o descripción para TikTok.
+        Crea contenido de alto impacto:
+        1. REEL/TIKTOK: Un guion dinámico con un gancho (hook) en los primeros 3 segundos, 3 puntos clave y un CTA (llamada a la acción).
+        2. INSTAGRAM: Un copy optimizado para captar la atención, con hashtags estratégicos.
+        3. TIKTOK DESCRIPTION: Una descripción breve y viral con hashtags tendencia.
+        4. TWITTER/X: Un hilo o post corto y controversial/educativo.
+        5. LINKEDIN: Un post profesional que aporte valor sobre el tema.
         
-        Devuelve el resultado en formato JSON con las llaves: instagram, twitter, linkedin, tiktok.
+        IMPORTANTE: El tono debe ser cercano y persuasivo.
+        Devuelve el resultado ÚNICAMENTE en formato JSON con las llaves: instagram, twitter, linkedin, tiktok, script_vertical.
     `;
 
     try {

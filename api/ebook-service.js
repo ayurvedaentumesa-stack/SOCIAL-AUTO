@@ -1,41 +1,43 @@
 const fs = require('fs');
 const path = require('path');
+const db = require('./db-service');
 
 /**
  * Service to manage content extraction from the project's Ebook.
  */
 async function getEbookSnippet() {
-    const dataDir = path.join(__dirname, '../data');
+    // 1. Try to get content from Database (Uploaded via Dashboard)
+    const dbSource = await db.getLatestSourceContent();
     
-    // Attempt to find a .txt or .pdf file in the data directory
-    const files = fs.readdirSync(dataDir);
-    const ebookFile = files.find(f => f.endsWith('.txt') || f.endsWith('.pdf'));
-
-    if (!ebookFile) {
-        throw new Error("No ebook found in backend/data/ directory. Please add a .txt or .pdf file.");
-    }
-
-    const filePath = path.join(dataDir, ebookFile);
-
-    if (ebookFile.endsWith('.txt')) {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        // Logic to pick a random or sequential paragraph
-        const paragraphs = content.split('\n\n').filter(p => p.length > 50);
+    if (dbSource && dbSource.content) {
+        console.log("Using source content from database:", dbSource.file_name);
+        const paragraphs = dbSource.content.split('\n\n').filter(p => p.length > 50);
         const randomIndex = Math.floor(Math.random() * paragraphs.length);
         return {
-            title: "Concepto del Ebook",
+            title: `Ebook DB: ${dbSource.file_name}`,
             body: paragraphs[randomIndex]
-        };
-    } else if (ebookFile.endsWith('.pdf')) {
-        // Here we would use 'pdf-parse'
-        // For now, returning a placeholder instruction
-        return {
-            title: "PDF Detectado",
-            body: "El sistema ha detectado un PDF. Asegúrate de instalar 'pdf-parse' para extraer el texto automáticamente."
         };
     }
 
-    return null;
+    // 2. Fallback to local files (if any)
+    const dataDir = path.join(__dirname, '../data');
+    
+    if (fs.existsSync(dataDir)) {
+        const files = fs.readdirSync(dataDir);
+        const ebookFile = files.find(f => f.endsWith('.txt') || f.endsWith('.pdf'));
+
+        if (ebookFile) {
+            const filePath = path.join(dataDir, ebookFile);
+            if (ebookFile.endsWith('.txt')) {
+                const content = fs.readFileSync(filePath, 'utf-8');
+                const paragraphs = content.split('\n\n').filter(p => p.length > 50);
+                const randomIndex = Math.floor(Math.random() * paragraphs.length);
+                return { title: ebookFile, body: paragraphs[randomIndex] };
+            }
+        }
+    }
+
+    throw new Error("No content source found. Please upload a PDF or TXT via the dashboard.");
 }
 
 module.exports = { getEbookSnippet };

@@ -8,7 +8,24 @@ const db = require('./db-service');
 /**
  * Main function triggered by a scheduler.
  */
-async function runAutomation(req, res) {
+/**
+ * Main function for Vercel Serverless Hook
+ */
+module.exports = async (req, res) => {
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     console.log("Starting Content Automation Flow (from Ebook)...");
 
     try {
@@ -34,11 +51,14 @@ async function runAutomation(req, res) {
         console.log("Video status:", videoUrl ? "Fetched from Pexels" : "Skipped");
 
         // 5. Schedule via Buffer
-        const staticResults = await schedulePost(content.linkedin || content.instagram, imageUrl);
+        // We use the vertical script for TikTok if available
+        const mainCaption = content.linkedin || content.instagram;
+        const staticResults = await schedulePost(mainCaption, imageUrl);
         
         let videoResults = [];
         if (videoUrl) {
-            videoResults = await schedulePost(content.tiktok || content.instagram, videoUrl, true);
+            const tiktokCaption = content.script_vertical || content.tiktok || content.instagram;
+            videoResults = await schedulePost(tiktokCaption, videoUrl, true);
         }
 
         const results = [...staticResults, ...videoResults];
@@ -52,26 +72,15 @@ async function runAutomation(req, res) {
             status: 'scheduled'
         });
 
-        if (res) {
-            res.status(200).send({
-                message: "Automation completed and logged",
-                data: content,
-                imageUrl: imageUrl,
-                videoUrl: videoUrl
-            });
-        }
+        res.status(200).send({
+            message: "Automation completed and logged",
+            data: content,
+            imageUrl: imageUrl,
+            videoUrl: videoUrl,
+            results: results
+        });
     } catch (error) {
         console.error("CRITICAL FALLBACK:", error);
-        // Here you would send a Slack/Email notification
-        if (res) {
-            res.status(500).send({ error: error.message });
-        }
+        res.status(500).send({ error: error.message });
     }
-}
-
-// For local testing or Cloud Function deployment
-if (require.main === module) {
-    runAutomation();
-}
-
-module.exports = { runAutomation };
+};

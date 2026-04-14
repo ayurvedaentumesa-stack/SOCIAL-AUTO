@@ -38,6 +38,50 @@ class DbService {
     }
 
     /**
+     * Saves the ebook text content to the database.
+     * @param {string} text - Extracted text from PDF or TXT
+     */
+    async saveSourceContent(text, fileName) {
+        try {
+            const { data, error } = await this.supabase
+                .from('source_content')
+                .upsert([
+                    {
+                        id: 1, // We keep only one active source for now
+                        content: text,
+                        file_name: fileName,
+                        updated_at: new Date()
+                    }
+                ]);
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error("Supabase Save Error:", error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Gets the latest source content from the database.
+     */
+    async getLatestSourceContent() {
+        try {
+            const { data, error } = await this.supabase
+                .from('source_content')
+                .select('*')
+                .eq('id', 1)
+                .single();
+
+            if (error) return null;
+            return data;
+        } catch (error) {
+            console.error("Supabase Fetch Error:", error.message);
+            return null;
+        }
+    }
+
+    /**
      * Optional: Fetch or update ebook snippets state
      */
     async getNextSnippetIndex() {
