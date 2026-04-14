@@ -1,0 +1,19 @@
+{
+  "name": "social-auto-backend",
+  "version": "1.0.0",
+  "description": "Backend for SOCIAL-AUTO automation",
+  "main": "api/main.js",
+  "scripts": {
+    "start": "node api/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.3.0",
+    "@google-cloud/secret-manager": "^5.0.1",
+    "@google/generative-ai": "^0.1.3",
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0"
+  }
+}
